@@ -61,36 +61,36 @@ def batch_import_consensuses(consensus_dir):
   garbage allocation does not happen on objects in an iterable while it's being iterated, this is a simple but more memory-efficient way to import larger amounts of consensuses (including network statuses)
   '''
 
-  #for dirname, dirnames, filenames in os.walk(consensus_dir):
-  dirname, dirnames, filenames in os.walk(consensus_dir) # FIXME: os.listdir() would be enough here.
-                                                         # normally, here we'd iterate over os.walk()
-                                                         # we should not recurse (done by DescriptorReader).
-  for subdir in dirnames:
-    dir_to_import = os.path.join(dirname, subdir)
-    log('importing from directory %s..', dir_to_import)
-    #import_consensuses(dir_to_import, os.path.join(dir_to_import, 'imported.persistence'))
+  for dirname, dirnames, filenames in os.walk(consensus_dir): # FIXME: os.listdir() would be enough here.
+                                                              # normally, here we'd iterate over os.walk()
+                                                              # we should not recurse (done by DescriptorReader).
+    for subdir in dirnames:
+      dir_to_import = os.path.join(dirname, subdir)
+      log('importing from directory %s..', dir_to_import)
+      #import_consensuses(dir_to_import, os.path.join(dir_to_import, 'imported.persistence'))
 
-    # not only does this (lazily) avoid possible memory leaks, but it's also one step towards parallelized import.
-    # no parallelization right now (lots of global state), but this is worth it in any case.
-    p = Process(target=import_consensuses, args=(dir_to_import, os.path.join(dir_to_import, 'imported.persistence')))
-    p.start()
-    p.join()
+      # not only does this (lazily) avoid possible memory leaks, but it's also one step towards parallelized import.
+      # no parallelization right now (lots of global state), but this is worth it in any case.
+      p = Process(target=import_consensuses, args=(dir_to_import, os.path.join(dir_to_import, 'imported.persistence')))
+      p.start()
+      p.join()
+    break
 
 def batch_import_descriptors(descriptor_dir):
   '''a simple high-level function to import server descriptors.
   descriptor import is less cannibalistic in terms of memory usage, but subprocess isolation still makes sense.
   '''
 
-  dirname, dirnames, filenames in os.walk(descriptor_dir) # FIXME: os.listdir() would be enough here.
-  for subdir in dirnames:
-    dir_to_import = os.path.join(dirname, subdir)
-    log('importing from directory %s..', dir_to_import)
-    import_descriptors(dir_to_import, os.path.join(dir_to_import, 'imported.persistence'))
+  for dirname, dirnames, filenames in os.walk(descriptor_dir): # FIXME: os.listdir() would be enough here.
+    for subdir in dirnames:
+      dir_to_import = os.path.join(dirname, subdir)
+      log('importing from directory %s..', dir_to_import)
+      import_descriptors(dir_to_import, os.path.join(dir_to_import, 'imported.persistence'))
 
-    p = Process(target=import_descriptors, args=(dir_to_import, os.path.join(dir_to_import, 'imported.persistence')))
-    p.start()
-    p.join()
-
+      p = Process(target=import_descriptors, args=(dir_to_import, os.path.join(dir_to_import, 'imported.persistence')))
+      p.start()
+      p.join()
+    break
 
 if __name__ == '__main__':
   pass
