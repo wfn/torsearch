@@ -1,0 +1,7 @@
+Flask==0.10
+Flask-SQLAlchemy==0.16
+SQLAlchemy==0.8.2
+Werkzeug==0.9.1
+wsgiref==0.1.2
+psycopg2==2.5.1
+stem==1.0.1
