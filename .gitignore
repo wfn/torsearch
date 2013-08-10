@@ -1,2 +1,6 @@
 *.pyc
-*config*.py
+*.un~
+*stub.py
+stem
+imported
+*.log
