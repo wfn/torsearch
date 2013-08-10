@@ -20,26 +20,26 @@
 --  we select the statusentry occurences (descriptor network statuses) depending on their statusentry.validafter
 --  we return a unique set of fingerprints associated with a given nickname, sorted by validafter (descending).
 
-select * from
+SELECT * FROM
 (
-  select distinct on (fingerprint) -- outer distinct on statusentry
-  * from
+  SELECT DISTINCT ON (fingerprint) -- outer distinct on statusentry
+  * FROM
   (
-    select descriptor.*, statusentry.validafter from
+    SELECT descriptor.*, statusentry.validafter FROM
     (
-      select distinct on (fingerprint) -- inner distinct on descriptor
+      SELECT DISTINCT ON (fingerprint) -- inner distinct on descriptor
       fingerprint, descriptor, nickname, published
-      from descriptor where
+      FROM descriptor WHERE
         lower(nickname) = 'default'
-        order by fingerprint, published desc -- first, let's get distinct most recently published fingerprints from descriptor table
-    ) as descriptor,
-    statusentry where                        -- and join them with statusentry using a near-unique key (fingerprint+descriptor)
+        ORDER BY fingerprint, published DESC -- first, let's get distinct most recently published fingerprints from descriptor table
+    ) AS descriptor,
+    statusentry WHERE                        -- and join them with statusentry using a near-unique key (fingerprint+descriptor)
       substr(statusentry.fingerprint, 0, 12) = substr(descriptor.fingerprint, 0, 12)
-      and substr(lower(statusentry.digest), 0, 12) = substr(descriptor.descriptor, 0, 12)
-  ) as everything                            -- statusentry will still return lots of rows per a single descriptor
-  order by fingerprint, validafter desc      -- (that was unique in the descr.table) - therefore, need to re-select distinct again,
-) as sorted                                  -- this time distinguishing on those fingerprints with the latest validafter. 
-order by validafter desc;                    -- the rows returned will have the latest fingerprints, but we still need to (re-)sort.
+      AND substr(lower(statusentry.digest), 0, 12) = substr(descriptor.descriptor, 0, 12)
+  ) AS everything                            -- statusentry will still return lots of rows per a single descriptor
+  ORDER BY fingerprint, validafter DESC      -- (that was unique in the descr.table) - therefore, need to re-select distinct again,
+) AS sorted                                  -- this time distinguishing on those fingerprints with the latest validafter. 
+ORDER BY validafter DESC;                    -- the rows returned will have the latest fingerprints, but we still need to (re-)sort.
 
 -- below is a sample EXPLAIN output:
 
