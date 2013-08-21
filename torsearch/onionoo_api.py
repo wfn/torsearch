@@ -56,7 +56,9 @@ def sql_search_nickname(nickname):
   "  order by fingerprint, validafter desc" # (that was unique in the descr.table) - therefore, need to re-select distinct again,
   ") as sorted "                            # this time distinguishing on those fingerprints with the latest validafter.
   "order by validafter desc limit 200;")    # the rows returned will have the latest fingerprints, but we still need to (re-)sort.
-  return db.session.execute(raw_sql, {'nickname': nickname.lower()})
+  #raw_sql = raw_sql.format(nickname=nickname.lower())
+  return db.session.query('fingerprint', 'descriptor', 'nickname', 'address', 'or_port', 'dir_port', 'published', 'validafter').\
+      from_statement(raw_sql).params(nickname=nickname)
 
 #@profile # uncomment to get info on how much time is spent and where it's being spent
 def get_results(query_type='details'):
@@ -70,7 +72,7 @@ def get_results(query_type='details'):
     query = sql_search_nickname(s.lower())
   else:
     query = StatusEntry.query.order_by('validafter desc').limit(200)
-  #run_explain(query) # do an EXPLAIN, report any Seq Scans to log
+  run_explain(query) # do an EXPLAIN, report any Seq Scans to log
   entries = query.all()
   return last_consensus, entries
 

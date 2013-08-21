@@ -6,7 +6,7 @@ import gc, pstats, time
 
 def profile(fn):
   def wrapper(*args, **kw):
-    elapsed, stat_loader, result = _profile("profiler_output.log", fn, *args, **kwargs)
+    elapsed, stat_loader, result = _profile("profiler_output.log", fn, *args, **kw)
     stats = stat_loader()
     stats.sort_stats('cumulative')
     stats.print_stats()
@@ -14,7 +14,7 @@ def profile(fn):
     return result
   return wrapper
 
-def _profile(filename, fn, *args, **kwargs):
+def _profile(filename, fn, *args, **kw):
   load_stats = lambda: pstats.Stats(filename)
   gc.collect()
 
