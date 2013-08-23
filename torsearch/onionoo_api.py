@@ -19,6 +19,11 @@ OUTPUT_TIME = True # a simple way to do (very) primitive 'live' benchmarking
                    # this is for running the backend live (in dev/debug mode),
                    # as in `python run.py >> _run.log 2>&1` etc.,
                    # without doing the actual benchmarking via benchmark.py
+                   # useful for real life query times (we should probably make it
+                   # even more rigorous - generate 'live usage' reports/profiles
+                   # that can be easily parsed. etc.)
+                   # (note: _run.log != debug.log; we output to debug.lot by default;
+                   # Flask accompanies us with simple HTTP query summaries to stdout.
 
 def sql_search_nickname(nickname):
   '''executes a raw SQL query returning a result set matching a particular nickname.
