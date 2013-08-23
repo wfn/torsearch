@@ -12,7 +12,9 @@ HTTP 400 is returned if the API does not understand what the client is saying.
 
 With Onionoo, the whole result set is bounded by a date range. Namely, Onionoo only deals with relays that are or have been running in the past week (or some small number of days.) In our case, these kinds of bounds are not present by design. Hence all that the torsearch API returns will always have an upper limit, in terms of the amount of result nodes / entries.
 
-As of now, the upper limit of any kinds of results returned is **1000**.
+As of now, the upper limit of any kinds of results returned is **500**.
+
+(Perhaps it would be best to keep two values: default upper limit (lower than 500), and maximum upper limit. For now, we want to see if we have, so to speak, some wiggle (temporal) space.)
 
 ## Result order
 
@@ -92,3 +94,5 @@ While the above parameters are optional for the summary and details documents, *
  - **lookup** - Specify a particular (whole) fingerprint.
 
 For now, only **offset** and **limit** can be used to further restrict the result set returned by the network status query.
+
+Somewhat unrelated (this might go into a separate doc): the backend works in such a way that if the GET statuses API point is queried with a fingerprint that it has not encountered before (since the last time the underlying database was restarted, to be exact), it will take a bit longer to reply (it will depend on how many network statuses the fingerprint in question is featured in). But after that first reply, subsequent queries will run faster, as a rule of thumb. This is unavoidable and is related to the way indexes and query results are cached in the database. We have to worry about worse case scenarios, but if they are good enough, all is well.

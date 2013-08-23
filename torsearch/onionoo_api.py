@@ -8,7 +8,8 @@ from torsearch.models import Descriptor, Consensus, StatusEntry, Fingerprint
 from torsearch.query_info import run_explain
 from torsearch.profiler import profile
 
-UPPER_LIMIT = 1000 # max number of results per query, for now
+UPPER_LIMIT = 500 # max number of results per query, for now
+                  # this can go into config.py
 
 def sql_search_nickname(nickname):
   '''executes a raw SQL query returning a result set matching a particular nickname.
@@ -183,7 +184,8 @@ def get_results(query_type='details'):
 @app.route('/')
 def index():
   #return 'Placeholder index page.'
-  return redirect('https://github.com/wfn/torsearch/blob/master/docs/onionoo_api.md')
+  #return redirect('https://github.com/wfn/torsearch/blob/master/docs/onionoo_api.md')
+  return 'Placeholder index page. Try /summary, /details, /statuses. <a href="https://github.com/wfn/torsearch/blob/master/docs/onionoo_api.md">API documentation/summary.</a>'
 
 @app.route('/summary')
 def summary():
@@ -247,6 +249,8 @@ def statuses():
       'exit_addresses': [e.address],
       'valid_after': e.validafter.strftime('%Y-%m-%d %H:%M:%S'),
     })
+    if e.nickname != 'Unnamed':
+      data['entries'][-1]['nickname'] = e.nickname
 
   data['count'] = len(data['entries'])
   resp = jsonify(data)

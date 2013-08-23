@@ -65,11 +65,12 @@ class Benchmark(object):
     total_time = 0.0
     for n, paramset in enumerate(self.params):
       self.logger.info('%d) Parameters: ' + str(paramset), n+1)
-      if run_in_order:
+      if 1: #run_in_order: # TODO: we're not using differences in run_in_order for torsearch
+                           # but it would be good idea to try that. TODO: Implement both run_in_order cases.
         for i in range(n_runs):
           t1 = time.time()
           result = self.testfunc(*paramset)
-          if run_in_order: # True => the actual execution is upon result.all()
+          if run_explain: # True => the actual execution is upon result.all()
             # (we want the buffer info every time we run this, but let's output the query statement only once)
             query_info.run_explain(result, analyze=True, buffers=True, output_statement=(i==0), output_explain=True,\
               debug_log=self.logger.info, warning_log=self.logger.warning)
