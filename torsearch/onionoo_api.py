@@ -187,7 +187,7 @@ def index():
 @app.route('/summary')
 def summary():
   last_consensus, entries = get_results('summary')
-  data = {'relays_published': last_consensus.valid_after, 'relays': []}
+  data = {'relays_published': last_consensus.valid_after.strftime('%Y-%m-%d %H:%M:%S'), 'relays': []}
   for e in entries:
     data['relays'].append({
       'f': e.fingerprint,
@@ -205,15 +205,15 @@ def summary():
 @app.route('/details')
 def details():
   last_consensus, entries = get_results('details')
-  data = {'relays_published': last_consensus.valid_after, 'relays': []}
+  data = {'relays_published': last_consensus.valid_after.strftime('%Y-%m-%d %H:%M:%S'), 'relays': []}
   for e in entries:
     data['relays'].append({
       'fingerprint': e.fingerprint,
       #'or_addresses': [e.address + ':' + str(e.or_port)],
       'exit_addresses': [e.address],
       'running': e.last_va == last_consensus.valid_after,
-      'last_seen': e.validafter,
-      'first_seen': e.first_va
+      'last_seen': e.validafter.strftime('%Y-%m-%d %H:%M:%S'),
+      'first_seen': e.first_va.strftime('%Y-%m-%d %H:%M:%S')
     })
     #if e.dir_port:
     #  data['relays'][-1]['dir_addresses'] = [e.address + ':' + str(e.dir_port)]
@@ -244,7 +244,7 @@ def statuses():
     data['entries'].append({
       'fingerprint': e.fingerprint,
       'exit_addresses': [e.address],
-      'valid_after': e.validafter,
+      'valid_after': e.validafter.strftime('%Y-%m-%d %H:%M:%S'),
     })
 
   data['count'] = len(data['entries'])

@@ -4,3 +4,5 @@
 stem
 imported
 *.log
+*config*.py
+additional.txt
