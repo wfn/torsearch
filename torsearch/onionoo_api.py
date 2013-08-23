@@ -1,15 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+import time
+import datetime
 from flask import Response, request, jsonify, abort, redirect
 from sqlalchemy import func, select, distinct
 from sqlalchemy.sql.expression import Select
-from torsearch import app, db
+from torsearch import app, db, debug_logger
 from torsearch.models import Descriptor, Consensus, StatusEntry, Fingerprint
 from torsearch.query_info import run_explain
 from torsearch.profiler import profile
 
 UPPER_LIMIT = 500 # max number of results per query, for now
                   # this can go into config.py
+
+OUTPUT_TIME = True # a simple way to do (very) primitive 'live' benchmarking
+                   # if True, will output query times to log
+                   # this is for running the backend live (in dev/debug mode),
+                   # as in `python run.py >> _run.log 2>&1` etc.,
+                   # without doing the actual benchmarking via benchmark.py
 
 def sql_search_nickname(nickname):
   '''executes a raw SQL query returning a result set matching a particular nickname.
@@ -173,12 +182,21 @@ def get_results(query_type='details'):
   #  query = StatusEntry.query.order_by('validafter desc').limit(200)
 
   query = do_search(last_consensus.valid_after)
-  print str(query)
-  run_explain(query, output_statement=True, output_explain=True) # do an EXPLAIN, report any Seq Scans to log
+
+  #print str(query)
+  #run_explain(query, output_statement=True, output_explain=True) # do an EXPLAIN, report any Seq Scans to log
+
+  if OUTPUT_TIME:
+    t1 = time.time()
   if isinstance(query, Select):
     entries = db.session.execute(query)
   else:
     entries = query.all() # higher-level Query object
+  if OUTPUT_TIME:
+    t2 = time.time()
+    debug_logger.info(str(datetime.datetime.now()) + ' - query finished, took: %s', t2 - t1)
+    #print datetime.datetime.now(), '- query finished, took:', t2 - t1
+
   return last_consensus, entries
 
 @app.route('/')
@@ -242,6 +260,13 @@ def statuses():
       (func.substr(StatusEntry.fingerprint, 0, Fingerprint.FP_SUBSTR_LEN) == lookup[:Fingerprint.FP_SUBSTR_LEN-1])
   q = q.order_by(StatusEntry.validafter.desc())
   entries = offset_limit(q)
+
+  if OUTPUT_TIME:
+    t1 = time.time()
+  entries = entries.all()
+  if OUTPUT_TIME:
+    t2 = time.time()
+    debug_logger.info(str(datetime.datetime.now()) + ' - statusentry query finished, took: %s', t2 - t1)
 
   for e in entries:
     data['entries'].append({
