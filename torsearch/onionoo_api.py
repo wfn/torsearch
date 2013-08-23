@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from flask import Response, request, jsonify, abort
+from flask import Response, request, jsonify, abort, redirect
 from sqlalchemy import func, select, distinct
 from sqlalchemy.sql.expression import Select
 from torsearch import app, db
@@ -182,7 +182,8 @@ def get_results(query_type='details'):
 
 @app.route('/')
 def index():
-  return 'Placeholder index page.'
+  #return 'Placeholder index page.'
+  return redirect('https://github.com/wfn/torsearch/blob/master/docs/onionoo_api.md')
 
 @app.route('/summary')
 def summary():
