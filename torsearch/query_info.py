@@ -3,7 +3,8 @@
 
 from pprint import pformat
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.sql.expression import Executable, ClauseElement, _literal_as_text
+from sqlalchemy.sql.expression import Executable, ClauseElement, _literal_as_text, Select
+from flask_sqlalchemy import BaseQuery
 from torsearch import db
 from torsearch import debug_logger
 
@@ -28,7 +29,8 @@ def run_explain(query, analyze=False, buffers=False, output_statement=False, out
     debug_log=debug_logger.info, warning_log=debug_logger.warning):
 
   warning_conditions = { # key = name of condition, value = evaluator of condition
-    'Sequential Scan detected': lambda info: 'Seq Scan' in info
+    'Sequential Scan detected':\
+        lambda info: 'Seq Scan' in '\n'.join(map(str, info)) # ResultProxy's => str => check
   }
 
   info = db.session.execute(Explain(query, analyze, buffers)).fetchall()
@@ -41,7 +43,11 @@ def run_explain(query, analyze=False, buffers=False, output_statement=False, out
 
   if output_statement or warning:
     debug_log('Query statement:')
-    debug_log(query.statement)
+    if isinstance(query, Select):
+      debug_log(query)
+    else:
+      debug_log(query.statement)
+
   if output_explain or warning:
     debug_log('EXPLAIN results:')
     debug_log(pformat(info))

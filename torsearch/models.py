@@ -106,9 +106,10 @@ class StatusEntry(db.Model):
 
   NO_UNICODE = True
 
-  validafter = db.Column(db.DateTime, primary_key=True) # composite primary key (1/2)
+  id = db.Column(db.Integer, primary_key=True)
+  validafter = db.Column(db.DateTime)#, primary_key=True) # composite primary key (1/2)
   nickname = db.Column(db.String(19), index=True)
-  fingerprint = db.Column(db.String(40), primary_key=True) # composite primary key (2/2)
+  fingerprint = db.Column(db.String(40))#, primary_key=True) # composite primary key (2/2)
   published = db.Column(db.DateTime, index=True)
   descriptor = db.Column(db.String(40), index=True) # TODO: proper column naming.
                                                     # As of now, what we call a 40-char-length 'descriptor' is called
@@ -174,6 +175,25 @@ class StatusEntry(db.Model):
         if self.NO_UNICODE and isinstance(value, unicode):
           value = str(value) # ditto re: we know it is ascii-encodable
         setattr(onto, col.name, value)
+
+class Fingerprint(db.Model):
+  '''A helper table which contains a unique fingerprint index.
+  '''
+
+  __tablename__ = 'fingerprint'
+
+  FP_LEN = 40
+  FP_SUBSTR_LEN = 12
+
+  fp12 = db.Column(db.String(FP_SUBSTR_LEN), primary_key=True)
+  fingerprint = db.Column(db.String(40))
+  digest = db.Column(db.String(40))
+  nickname = db.Column(db.String(19), index=True)
+  address = db.Column(db.String(15))
+  first_va = db.Column(db.DateTime)
+  last_va = db.Column(db.DateTime)
+  sid = db.Column(db.ForeignKey('statusentry.id'))
+
 
 if __name__ == '__main__':
   pass
