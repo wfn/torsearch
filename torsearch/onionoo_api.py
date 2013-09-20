@@ -323,7 +323,10 @@ def statuses():
   if not lookup or len(lookup) != Fingerprint.FP_LEN:
     return abort(400)
 
-  data = {'entries': []}
+  last_consensus = Consensus.query.order_by(Consensus.valid_after.desc()).first()
+  data = {'relays_published':
+            last_consensus.valid_after.strftime('%Y-%m-%d %H:%M:%S'),
+          'fingerprint': lookup,}
   q = StatusEntry.query.filter\
       (func.substr(StatusEntry.fingerprint, 0, Fingerprint.FP_SUBSTR_LEN) == lookup[:Fingerprint.FP_SUBSTR_LEN-1])
   q = q.order_by(StatusEntry.validafter.desc())
@@ -338,16 +341,30 @@ def statuses():
     t2 = time.time()
     debug_logger.info(str(datetime.datetime.now()) + ' - statusentry query finished, took: %s', t2 - t1)
 
-  for e in entries:
-    data['entries'].append({
-      'fingerprint': e.fingerprint,
-      'exit_addresses': [e.address],
-      'valid_after': e.validafter.strftime('%Y-%m-%d %H:%M:%S'),
-    })
-    if e.nickname != 'Unnamed':
-      data['entries'][-1]['nickname'] = e.nickname
+  if request.args.get('condensed', 'false') != 'true':
+    data['entries'] = []
+    for e in entries:
+      data['entries'].append({
+        'exit_addresses': [e.address],
+        'valid_after': e.validafter.strftime('%Y-%m-%d %H:%M:%S'),
+      })
+      if e.nickname != 'Unnamed':
+        data['entries'][-1]['nickname'] = e.nickname
+  else:
+    data['ranges'] = []
+    last = None
+    #for e in reversed(list(entries)): # TODO: this is probably not the wisest idea ever
+    for e in entries:
+      if not last or last - e.validafter > datetime.timedelta(hours=1):
+        if data['ranges']:
+          data['ranges'][-1]['valid_after_from'] = last
+        data['ranges'].append({'valid_after_to': e.validafter})
+      last = e.validafter
+    if data['ranges']:
+      data['ranges'][-1]['valid_after_from'] = last
+    data['total_status_count'] = len(entries)
 
-  data['count'] = len(data['entries'])
+  data['count'] = len(data['entries'] if 'entries' in data else data['ranges'])
   resp = jsonify(data)
   resp.status_code = 200
   return resp
