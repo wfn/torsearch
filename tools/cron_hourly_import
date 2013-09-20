@@ -1,0 +1,3 @@
+# m h  dom mon dow   command
+
+8  *  *   *   *     /home/z/p/tor/ts/tools/rsync_and_import.sh 1> /dev/null 2>> /home/z/p/tor/ts/hourly_cron.err
