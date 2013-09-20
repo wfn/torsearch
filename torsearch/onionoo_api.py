@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import sys
 import time
 import datetime
+from dateutil.parser import parse as dt_parse
 from flask import Response, request, jsonify, abort, redirect
 from sqlalchemy import func, select, distinct
 from sqlalchemy.sql.expression import Select
@@ -90,6 +92,9 @@ def search_nickname_details(nickname):
   #    .from_statement(raw_sql).params(nickname=nickname)
 
 def offset_limit(query, upper_limit=UPPER_LIMIT, args=None):
+  '''apply offset and limit params, if present.
+  '''
+
   if not args:
     args = request.args
   limit = min(upper_limit, max(int(args['limit']), 0) if 'limit' in args else upper_limit)
@@ -97,6 +102,41 @@ def offset_limit(query, upper_limit=UPPER_LIMIT, args=None):
   if offset > 0:
     query = query.offset(offset)
   query = query.limit(limit)
+  return query
+
+def get_from_to(args=None):
+  if not args:
+    args = request.args
+
+  # we need a 'default date' (that we can then safely ignore), because by
+  # default, dateutil's "default value is the current date, at 00:00:00am."
+  default_ignore_date = datetime.datetime.strptime('1970-01-01 00:00:00', '%Y-%m-%d %H:%M:%S')
+  if not args:
+    args = request.args
+  c_from = request.args.get('from')
+  c_to = request.args.get('to')
+  try:
+    if c_from:
+      c_from = dt_parse(c_from, default=default_ignore_date)
+    if c_to:
+      c_to = dt_parse(c_to, default=default_ignore_date)
+  except Exception as e:
+    pass
+
+  return c_from, c_to
+
+def from_to(query, args=None):
+  '''apply consensus from-date and to-date params, if present.
+  '''
+
+  c_from, c_to = get_from_to(args=args)
+
+  if c_from and c_from <= (c_to if c_to else c_from):
+    query = query.filter(StatusEntry.validafter >= c_from)
+  if c_to and c_to >= (c_from if c_from else c_to):
+    #query = query.filter(StatusEntry.validafter <= c_to)
+    query = query.filter(StatusEntry.validafter < c_to)
+
   return query
 
 def do_search(last_validafter, args=None):
@@ -124,19 +164,34 @@ def do_search(last_validafter, args=None):
       if running['condition']:
         q = q.filter(Fingerprint.last_va == last_validafter)
       else:
-        q = q.filter(Fingerprint.last_va != last_validafter).order_by(Fingerprint.last_va.desc())
+        q = q.filter(Fingerprint.last_va != last_validafter)
+        c_from, c_to = get_from_to()
+        if c_from:
+          q = q.filter(Fingerprint.first_va >= c_from)
+        if c_to:
+          q = q.filter(Fingerprint.last_va < c_to)
+        q = q.order_by(Fingerprint.last_va.desc())
     if not running['do_query']:
-      q = q.order_by(Fingerprint.last_va.desc()) # we do an inner ORDER BY, so we can internally LIMIT => our JOIN will be easier
+      c_from, c_to = get_from_to()
+      if c_from:
+        q = q.filter(Fingerprint.first_va >= c_from)
+      if c_to:
+        q = q.filter(Fingerprint.last_va < c_to)
+      q = q.order_by(Fingerprint.last_va.desc()) # we do an inner ORDER BY, so
+                                                 # we can internally LIMIT =>
+                                                 # our JOIN will be easier
     # if there's an OFFSET, we have to put it here.
     # + do an inner LIMIT at this point, before the JOIN - we'll only need to JOIN <= UPPER_LIMIT rows
     q = offset_limit(q, args=args)
-
     q = q.from_self(Fingerprint.fingerprint, Fingerprint.first_va, Fingerprint.last_va, StatusEntry.or_port, StatusEntry.address,\
         StatusEntry.validafter, StatusEntry.dir_port, StatusEntry.nickname)\
         .join(StatusEntry, Fingerprint.sid == StatusEntry.id)
+    q = from_to(q)
 
     if not (running['do_query'] and running['condition']):
       q = q.order_by(StatusEntry.validafter.desc()) # the JOIN itself will leave the rows disordered again
+    print str(q)
+    sys.stdout.flush()
 
   else:
 
@@ -162,14 +217,22 @@ def do_search(last_validafter, args=None):
       q = q.where(Fingerprint.address.like(term + '%')) # this gets the job done, but we lose a subset of addresses!
     else:
       q = q.where(func.lower(Fingerprint.nickname).like(term.lower() + '%'))
+    c_from, c_to = get_from_to()
+    if c_from:
+      q = q.where(Fingerprint.first_va >= c_from)
+    if c_to:
+      q = q.where(Fingerprint.last_va < c_to)
     q = q.where(Fingerprint.sid == StatusEntry.id) # implicit inner join
+    if c_from:
+      q = q.where(StatusEntry.validafter >= c_from)
+    if c_to:
+      q = q.where(StatusEntry.validafter < c_to)
     if not (running['do_query'] and running['condition']):
       q = q.order_by(StatusEntry.validafter.desc())
     # we didn't OFFSET/LIMIT before the JOIN, do it now
     q = offset_limit(q)
 
   return q
-
 
 #@profile # uncomment to get info on how much time is spent and where it's being spent
 def get_results(query_type='details'):
@@ -238,7 +301,7 @@ def details():
       #'or_addresses': [e.address + ':' + str(e.or_port)],
       'exit_addresses': [e.address],
       'running': e.last_va == last_consensus.valid_after,
-      'last_seen': e.validafter.strftime('%Y-%m-%d %H:%M:%S'),
+      'last_seen': e.last_va.strftime('%Y-%m-%d %H:%M:%S'),
       'first_seen': e.first_va.strftime('%Y-%m-%d %H:%M:%S')
     })
     #if e.dir_port:
@@ -264,6 +327,8 @@ def statuses():
   q = StatusEntry.query.filter\
       (func.substr(StatusEntry.fingerprint, 0, Fingerprint.FP_SUBSTR_LEN) == lookup[:Fingerprint.FP_SUBSTR_LEN-1])
   q = q.order_by(StatusEntry.validafter.desc())
+
+  q = from_to(q)
   entries = offset_limit(q)
 
   if OUTPUT_TIME:
