@@ -358,10 +358,11 @@ def statuses():
       if not last or last - e.validafter > datetime.timedelta(hours=1):
         if data['ranges']:
           data['ranges'][-1]['valid_after_from'] = last
-        data['ranges'].append({'valid_after_to': e.validafter})
+        data['ranges'].append({'valid_after_to': e.validafter.strftime('%Y-%m-%d %H:%M:%S'),
+          'last_addresses': [e.address], 'last_nickname': e.nickname})
       last = e.validafter
     if data['ranges']:
-      data['ranges'][-1]['valid_after_from'] = last
+      data['ranges'][-1]['valid_after_from'] = last.strftime('%Y-%m-%d %H:%M:%S')
     data['total_status_count'] = len(entries)
 
   data['count'] = len(data['entries'] if 'entries' in data else data['ranges'])
