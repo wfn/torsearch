@@ -107,8 +107,8 @@ class StatusEntry(db.Model):
   NO_UNICODE = True
 
   id = db.Column(db.Integer, primary_key=True)
-  validafter = db.Column(db.DateTime)#, primary_key=True) # composite primary key (1/2)
-  nickname = db.Column(db.String(19), index=True)
+  validafter = db.Column(db.DateTime, index=True)#, primary_key=True) # composite primary key (1/2)
+  nickname = db.Column(db.String(19))
   fingerprint = db.Column(db.String(40))#, primary_key=True) # composite primary key (2/2)
   published = db.Column(db.DateTime, index=True)
   descriptor = db.Column(db.String(40), index=True) # TODO: proper column naming.
