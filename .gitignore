@@ -3,6 +3,7 @@
 *stub.py
 stem
 imported
-*.log
+*.log*
 *config*.py
 additional.txt
+*.err

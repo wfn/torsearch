@@ -190,8 +190,6 @@ def do_search(last_validafter, args=None):
 
     if not (running['do_query'] and running['condition']):
       q = q.order_by(StatusEntry.validafter.desc()) # the JOIN itself will leave the rows disordered again
-    print str(q)
-    sys.stdout.flush()
 
   else:
 
@@ -357,7 +355,7 @@ def statuses():
     for e in entries:
       if not last or last - e.validafter > datetime.timedelta(hours=1):
         if data['ranges']:
-          data['ranges'][-1]['valid_after_from'] = last
+          data['ranges'][-1]['valid_after_from'] = last.strftime('%Y-%m-%d %H:%M:%S')
         data['ranges'].append({'valid_after_to': e.validafter.strftime('%Y-%m-%d %H:%M:%S'),
           'last_addresses': [e.address], 'last_nickname': e.nickname})
       last = e.validafter
