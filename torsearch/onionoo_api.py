@@ -32,7 +32,7 @@ def sql_search_nickname(nickname):
   '''executes a raw SQL query returning a result set matching a particular
   nickname.
 
-  no longer used - keep this for now nevertheless.
+  no longer used - keep this for reference, for now.
   '''
 
   raw_sql = (
@@ -137,6 +137,9 @@ def offset_limit(query, upper_limit=UPPER_LIMIT, args=None):
   return query
 
 def get_from_to(args=None):
+  '''apply date-range (from..to) params, if present.
+  '''
+
   if not args:
     args = request.args
 
@@ -146,8 +149,8 @@ def get_from_to(args=None):
     '%Y-%m-%d %H:%M:%S')
   if not args:
     args = request.args
-  c_from = request.args.get('from')
-  c_to = request.args.get('to')
+  c_from = args.get('from')
+  c_to = args.get('to')
   try:
     if c_from:
       c_from = dt_parse(c_from, default=default_ignore_date)
@@ -199,14 +202,14 @@ def do_search(last_validafter, args=None):
         q = q.filter(Fingerprint.last_va == last_validafter)
       else:
         q = q.filter(Fingerprint.last_va != last_validafter)
-        c_from, c_to = get_from_to()
+        c_from, c_to = get_from_to(args)
         if c_from:
           q = q.filter(Fingerprint.first_va >= c_from)
         if c_to:
           q = q.filter(Fingerprint.last_va < c_to)
         q = q.order_by(Fingerprint.last_va.desc())
     if not running['do_query']:
-      c_from, c_to = get_from_to()
+      c_from, c_to = get_from_to(args)
       if c_from:
         q = q.filter(Fingerprint.first_va >= c_from)
       if c_to:
@@ -223,7 +226,7 @@ def do_search(last_validafter, args=None):
       Fingerprint.last_va, StatusEntry.or_port, StatusEntry.address,\
       StatusEntry.validafter, StatusEntry.dir_port, StatusEntry.nickname)\
       .join(StatusEntry, Fingerprint.sid == StatusEntry.id)
-    q = from_to(q)
+    q = from_to(q, args)
 
     if not (running['do_query'] and running['condition']):
       q = q.order_by(StatusEntry.validafter.desc()) # the JOIN itself will
@@ -267,7 +270,7 @@ def do_search(last_validafter, args=None):
                                                         # addresses!
     else:
       q = q.where(func.lower(Fingerprint.nickname).like(term.lower() + '%'))
-    c_from, c_to = get_from_to()
+    c_from, c_to = get_from_to(args)
     if c_from:
       q = q.where(Fingerprint.first_va >= c_from)
     if c_to:
@@ -286,11 +289,11 @@ def do_search(last_validafter, args=None):
 
 #@profile # uncomment to get info on how much time is spent and where it's
           # being spent
-def get_results(query_type='details'):
+def get_results(query_type='details', args=None):
   last_consensus = Consensus.query.order_by(Consensus.valid_after.desc())\
     .first()
 
-  query = do_search(last_consensus.valid_after)
+  query = do_search(last_consensus.valid_after, args=args)
 
   # do an EXPLAIN, report any Seq Scans to log:
   #run_explain(query, output_statement=True, output_explain=True)
