@@ -99,13 +99,17 @@ The following methods each return a single document containing zero or more rela
 Each of these documents can be parameterized to select only a subset of relay documents to be included in the response. If multiple parameters are specified, they are combined using a logical AND operation, meaning that only the intersection of relays matching all parameters is returned.
 
  - **running** - Return only running (parameter value true) or only non-running relays (paramter value false or 0). Parameter values are case-insensitive.
+
  - **search** - Return only relays with the parameter value matching (part of a) nickname, (possibly $-prefixed) beginning of a fingerprint, or beginning of an IP address. Searches are case-insensitive.
    For now, "part of a" (nickname, fingerprint, address) means that the value for a given field has to begin with this search string. A search for "mor" will include "moria1", but a search for "oria" will not. This is valid for all three field types.
+
  - **lookup** - Return only the relay with the parameter value matching the fingerprint. Lookups only work for full fingerprints.
 
  - **from** - Return only relays that have been featured in consensus not before some date. For example, "?from=2012-05-01" will return relays (i.e., will match against fingerprints) that have been present in consensuses from 2012-05-01 00:00:00 and onwards.
+
  - **to** - Return only relays that have been featured in consensus up until some date, **not inclusive**. For example "?from=2012-05-01&to=2013" will return relays that have been present in consensuses not before 2012-05-01 00:00:00 and not after 2012-12-31 23:00:00 (this being the last consensus before the date matching "2013".)
- These latter two parameters accept date and time strings in the format "YYYY-mm-dd HH:MM:SS" (years, months, days, hours, minutes, seconds), but one can omit elements starting from the right of the string, up until YYYY. For example, "2013" will resolve to "2013-01-01 00:00:00" (and hence indicate this particular consensus document, with that particular valid-after value), "2013-02" will resolve to "2013-02-01 00:00:00", "2013-02-15" will resolve to "2013-02-15 00:00:00".
+
+These latter two parameters accept date and time strings in the format "YYYY-mm-dd HH:MM:SS" (years, months, days, hours, minutes, seconds), but one can omit elements starting from the right of the string, up until YYYY. For example, "2013" will resolve to "2013-01-01 00:00:00" (and hence indicate this particular consensus document, with that particular valid-after value), "2013-02" will resolve to "2013-02-01 00:00:00", "2013-02-15" will resolve to "2013-02-15 00:00:00".
 
 Additionally as noted, **offset** and **limit** are supported as well.
 
@@ -122,6 +126,7 @@ While the above parameters are optional for the summary and details documents, *
 Apart from the mandatory lookup parameter, one can optionally supply any combination of the aforementioned parameters:
 
  - **from** - Return only network statuses that have been featured in consensus not before some date. For example, "?from=2012-05-01" will return network status entries that have been present in consensuses from 2012-05-01 00:00:00 and onwards.
+
  - **to** - Return only network statuses that have been featured in consensus up until some date, **not inclusive**. For example "?from=2012-05-01&to=2013" will return network status entries that have been present in consensuses not before 2012-05-01 00:00:00 and not after 2012-12-31 23:00:00 (this being the last consensus before the date matching "2013".)
 
 Additionally,
