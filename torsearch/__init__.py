@@ -11,7 +11,8 @@ from config import basedir
 app = Flask(__name__)
 app.config.from_object('config')
 db = SQLAlchemy(app, session_options={'autocommit': False, 'autoflush': False})
-from torsearch import models # now we can import models which use the db we've just defined
+from torsearch import models # now we can import models which use the db we've
+                             # just defined
 
 debug_logger = logging.getLogger('torsearch')
 debug_log_handler = FileHandler(os.path.join(basedir, 'debug.log'))

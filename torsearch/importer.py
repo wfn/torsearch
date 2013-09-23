@@ -21,7 +21,8 @@ def import_descriptors(wherefrom, persistence_file):
     gc.enable()
 
   reader = DescriptorReader(wherefrom, persistence_path=persistence_file)
-  log('recalled %d files processed from my source(s) provided', len(reader.get_processed_files()))
+  log('recalled %d files processed from my source(s) provided',
+    len(reader.get_processed_files()))
   with reader:
     i = 0 # need due to for() scope
     for i, desc in enumerate(reader):
@@ -46,7 +47,9 @@ def import_consensus(document, import_statuses=True,
     # imported most of our stuff from the metrics archives.
     # the archives and the rsync'ed 'recent' may overlap.
 
-    if Consensus.query.filter(Consensus.valid_after==document.valid_after).count():
+    if Consensus.query.filter(Consensus.valid_after==document.valid_after)\
+      .count():
+
       log('Consensus document with valid-after %s already in database '
           '- skipping this document.',
           document.valid_after.strftime('%y-%m-%d %H:%M:%S'))
@@ -117,7 +120,9 @@ def import_consensuses(wherefrom, persistence_file, import_statuses=True):
   if not gc.isenabled():
     gc.enable()
 
-  reader = DescriptorReader(wherefrom, persistence_path=persistence_file, document_handler = DocumentHandler.DOCUMENT)
+  reader = DescriptorReader(wherefrom, persistence_path=persistence_file,
+    document_handler = DocumentHandler.DOCUMENT)
+
   iterated_over_something = False
   with reader:
     i = 0
@@ -127,7 +132,8 @@ def import_consensuses(wherefrom, persistence_file, import_statuses=True):
         log('Document %d (valid-after %s) committed.', i+1, doc.valid_after)
         iterated_over_something = True
       gc.collect()
-  gc.collect() # calling again just in case: reader is now closed, can gc it (and docs)
+  gc.collect() # calling again just in case: reader is now closed,
+               # can gc it (and docs)
   if iterated_over_something:
     log('Iterated over %d documents', i+1)
   else:
@@ -135,12 +141,16 @@ def import_consensuses(wherefrom, persistence_file, import_statuses=True):
 
 def batch_import_consensuses(consensus_dir, single_dir=False):
   '''a simple high-level function to import consensuses and network statuses.
-  garbage allocation does not happen on objects in an iterable while it's being iterated, this is a simple but more memory-efficient way to import larger amounts of consensuses (including network statuses)
+
+  garbage allocation does not happen on objects in an iterable while it's being
+  iterated, this is a simple but more memory-efficient way to import larger
+  amounts of consensuses (including network statuses)
   '''
 
   def do_import(import_dir):
     log('Importing from directory %s..', import_dir)
-    p = Process(target=import_consensuses, args=(import_dir, os.path.join(import_dir, 'imported.persistence')))
+    p = Process(target=import_consensuses, args=(import_dir,
+      os.path.join(import_dir, 'imported.persistence')))
     p.start()
     p.join()
 
@@ -149,31 +159,39 @@ def batch_import_consensuses(consensus_dir, single_dir=False):
     do_import(consensus_dir)
     return
 
-  for dirname, dirnames, filenames in os.walk(consensus_dir): # FIXME: os.listdir() would be enough here.
-                                                              # normally, here we'd iterate over os.walk()
-                                                              # we should not recurse (done by DescriptorReader).
+  # FIXME: os.listdir() would be enough here.
+  # normally, here we'd iterate over os.walk()
+  # we should not recurse (done by DescriptorReader).
+  for dirname, dirnames, filenames in os.walk(consensus_dir):
     for subdir in dirnames:
       dir_to_import = os.path.join(dirname, subdir)
-      #import_consensuses(dir_to_import, os.path.join(dir_to_import, 'imported.persistence'))
+      # the default/old way was:
+      #import_consensuses(dir_to_import, os.path.join(dir_to_import,
+      #  'imported.persistence'))
 
-      # not only does this (lazily) avoid possible memory leaks, but it's also one step towards parallelized import.
-      # no parallelization right now (lots of global state), but this is worth it in any case.
-      #p = Process(target=import_consensuses, args=(dir_to_import, os.path.join(dir_to_import, 'imported.persistence')))
-      do_import(dir_to_import)
+      # not only does this (lazily) avoid possible memory leaks, but it's also
+      # one step towards parallelized import.
+      # no parallelization right now (lots of global state), but this is worth
+      # it in any case.
+      do_import(dir_to_import) # will create a Process object
     break
 
 def batch_import_descriptors(descriptor_dir):
   '''a simple high-level function to import server descriptors.
-  descriptor import is less cannibalistic in terms of memory usage, but subprocess isolation still makes sense.
+
+  descriptor import is less cannibalistic in terms of memory usage, but
+  subprocess isolation still makes sense.
   '''
 
-  for dirname, dirnames, filenames in os.walk(descriptor_dir): # FIXME: os.listdir() would be enough here.
+  for dirname, dirnames, filenames in os.walk(descriptor_dir):
     for subdir in dirnames:
       dir_to_import = os.path.join(dirname, subdir)
       log('importing from directory %s..', dir_to_import)
-      import_descriptors(dir_to_import, os.path.join(dir_to_import, 'imported.persistence'))
+      import_descriptors(dir_to_import, os.path.join(dir_to_import,
+        'imported.persistence'))
 
-      p = Process(target=import_descriptors, args=(dir_to_import, os.path.join(dir_to_import, 'imported.persistence')))
+      p = Process(target=import_descriptors, args=(dir_to_import,
+        os.path.join(dir_to_import, 'imported.persistence')))
       p.start()
       p.join()
     break

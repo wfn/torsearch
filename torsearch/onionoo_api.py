@@ -21,14 +21,17 @@ OUTPUT_TIME = True # a simple way to do (very) primitive 'live' benchmarking
                    # this is for running the backend live (in dev/debug mode),
                    # as in `python run.py >> _run.log 2>&1` etc.,
                    # without doing the actual benchmarking via benchmark.py
-                   # useful for real life query times (we should probably make it
-                   # even more rigorous - generate 'live usage' reports/profiles
-                   # that can be easily parsed. etc.)
-                   # (note: _run.log != debug.log; we output to debug.lot by default;
-                   # Flask accompanies us with simple HTTP query summaries to stdout.
+                   # useful for real life query times (we should probably make
+                   # it even more rigorous - generate 'live usage'
+                   # reports/profiles that can be easily parsed. etc.)
+                   # (note: _run.log != debug.log; we output to debug.lot by
+                   # default; Flask accompanies us with simple HTTP query
+                   # summaries to stdout.
 
 def sql_search_nickname(nickname):
-  '''executes a raw SQL query returning a result set matching a particular nickname.
+  '''executes a raw SQL query returning a result set matching a particular
+  nickname.
+
   no longer used - keep this for now nevertheless.
   '''
 
@@ -41,55 +44,83 @@ def sql_search_nickname(nickname):
   "    select descriptor.*, statusentry.validafter from"
   "    ("
   "      select distinct on (fingerprint)" # inner distinct on descriptor
-  "      fingerprint, descriptor, nickname, address, or_port, dir_port, published"
+  "      fingerprint, descriptor, nickname, address, or_port, dir_port, "
+  "        published"
   "      from descriptor where"
   "        lower(nickname) = :nickname"
-  "        order by fingerprint, published desc" # first, let's get distinct most recently published fingerprints from descriptor table
+  "        order by fingerprint, published desc" # first, let's get distinct
+                                                 # most recently published
+                                                 # fingerprints from descriptor
+                                                 # table
   "    ) as descriptor,"
-  "    statusentry where"                        # and join them with statusentry using a near-unique key (fingerprint+descriptor)
-  "      substr(statusentry.fingerprint, 0, 12) = substr(descriptor.fingerprint, 0, 12)"
-  "      and substr(lower(statusentry.digest), 0, 12) = substr(descriptor.descriptor, 0, 12)"
-  "  ) as everything"                       # statusentry will still return lots of rows per a single descriptor
-  "  order by fingerprint, validafter desc" # (that was unique in the descr.table) - therefore, need to re-select distinct again,
-  ") as sorted "                            # this time distinguishing on those fingerprints with the latest validafter.
-  "order by validafter desc limit 200;")    # the rows returned will have the latest fingerprints, but we still need to (re-)sort.
-  #raw_sql = raw_sql.format(nickname=nickname.lower())
-  return db.session.query('fingerprint', 'descriptor', 'nickname', 'address', 'or_port', 'dir_port', 'published', 'validafter')\
+  "    statusentry where"                        # and join them with
+                                                 # statusentry using a
+                                                 # near-unique key
+                                                 # (fingerprint+descriptor)
+  "      substr(statusentry.fingerprint, 0, 12) = "
+  "        substr(descriptor.fingerprint, 0, 12)"
+  "      and substr(lower(statusentry.digest), 0, 12) = "
+  "        substr(descriptor.descriptor, 0, 12)"
+  "  ) as everything"                       # statusentry will still return
+                                            # lots of rows per a single
+                                            # descriptor
+  "  order by fingerprint, validafter desc" # (that was unique in the
+                                            # descr.table) - therefore, need
+                                            # to re-select distinct again,
+  ") as sorted "                            # this time distinguishing on those
+                                            # fingerprints with the latest
+                                            # validafter.
+  "order by validafter desc limit 200;")    # the rows returned will have the
+                                            # latest fingerprints, but we still
+                                            # need to (re-)sort.
+
+  return db.session.query('fingerprint', 'descriptor', 'nickname', 'address',
+      'or_port', 'dir_port', 'published', 'validafter')\
       .from_statement(raw_sql).params(nickname=nickname)
 
 def search_nickname_summary(nickname):
   '''we are using this kind of query, more or less.
-  we simply translated the SQL into modular/pluggable SQLAlchemy primitives, which directly translate to good, raw SQL. (confirmed.)
+
+  we simply translated the SQL into modular/pluggable SQLAlchemy primitives,
+  which directly translate to good, raw SQL. (confirmed.)
   we no longer use this function - keeping for now.
   '''
+
   raw_sql = (
       "SELECT nickname, fingerprint, address, last_va FROM fingerprint "
       "  WHERE lower(nickname) = :nickname "
       "  ORDER BY last_va DESC "
       "  LIMIT 100 ")
-  return db.session.query('nickname', 'fingerprint', 'address', 'last_va').from_statement(raw_sql)\
+  return db.session.query('nickname', 'fingerprint', 'address', 'last_va')\
+      .from_statement(raw_sql)\
       .params(nickname=nickname)
 
 def search_nickname_details(nickname):
   '''we are using this kind of query, more or less.
-  we simply translated the SQL into modular/pluggable SQLAlchemy primitives, which directly translate to good, raw SQL. (confirmed.)
+
+  we simply translated the SQL into modular/pluggable SQLAlchemy primitives,
+  which directly translate to good, raw SQL. (confirmed.)
   we no longer use this function - keeping for now.
   '''
+
   raw_sql = (
-      "SELECT fingerprint.nickname, fingerprint.fingerprint, statusentry.address, or_port, dir_port, published, validafter "
+      "SELECT fingerprint.nickname, fingerprint.fingerprint, "
+      "  statusentry.address, or_port, dir_port, published, validafter "
       "  FROM fingerprint, statusentry "
       "  WHERE lower(fingerprint.nickname) = :nickname "
       "    AND statusentry.id = fingerprint.sid "
       "  ORDER BY validafter DESC "
       "  LIMIT 100 ")
-  q = select([Fingerprint.nickname, Fingerprint.fingerprint, StatusEntry.address, StatusEntry.or_port, StatusEntry.dir_port, StatusEntry.published, StatusEntry.validafter])
+
+  q = select([Fingerprint.nickname, Fingerprint.fingerprint,
+    StatusEntry.address, StatusEntry.or_port, StatusEntry.dir_port,
+    StatusEntry.published, StatusEntry.validafter])
+
   q = q.where(func.lower(Fingerprint.nickname) == nickname)
   q = q.where(Fingerprint.sid == StatusEntry.id)
   q = q.order_by('validafter DESC')
   q = q.limit(100)
   return q
-  #return db.session.query('nickname', 'fingerprint', 'address', 'or_port', 'dir_port', 'published', 'validafter')\
-  #    .from_statement(raw_sql).params(nickname=nickname)
 
 def offset_limit(query, upper_limit=UPPER_LIMIT, args=None):
   '''apply offset and limit params, if present.
@@ -97,7 +128,8 @@ def offset_limit(query, upper_limit=UPPER_LIMIT, args=None):
 
   if not args:
     args = request.args
-  limit = min(upper_limit, max(int(args['limit']), 0) if 'limit' in args else upper_limit)
+  limit = min(upper_limit, max(int(args['limit']), 0) if 'limit' in args\
+    else upper_limit)
   offset = int(args['offset']) if 'offset' in args else 0
   if offset > 0:
     query = query.offset(offset)
@@ -110,7 +142,8 @@ def get_from_to(args=None):
 
   # we need a 'default date' (that we can then safely ignore), because by
   # default, dateutil's "default value is the current date, at 00:00:00am."
-  default_ignore_date = datetime.datetime.strptime('1970-01-01 00:00:00', '%Y-%m-%d %H:%M:%S')
+  default_ignore_date = datetime.datetime.strptime('1970-01-01 00:00:00',
+    '%Y-%m-%d %H:%M:%S')
   if not args:
     args = request.args
   c_from = request.args.get('from')
@@ -145,7 +178,8 @@ def do_search(last_validafter, args=None):
 
   if not args:
     args = request.args
-  lookup = args['lookup'] if 'lookup' in args and len(args['lookup']) == Fingerprint.FP_LEN else None
+  lookup = args['lookup'] if \
+    ('lookup' in args and len(args['lookup']) == Fingerprint.FP_LEN) else None
   term = args['search'] if 'search' in args and args['search'] else None
   if lookup:
     term = lookup
@@ -181,20 +215,27 @@ def do_search(last_validafter, args=None):
                                                  # we can internally LIMIT =>
                                                  # our JOIN will be easier
     # if there's an OFFSET, we have to put it here.
-    # + do an inner LIMIT at this point, before the JOIN - we'll only need to JOIN <= UPPER_LIMIT rows
+    # + do an inner LIMIT at this point, before the JOIN -
+    # we'll only need to JOIN <= UPPER_LIMIT rows
+
     q = offset_limit(q, args=args)
-    q = q.from_self(Fingerprint.fingerprint, Fingerprint.first_va, Fingerprint.last_va, StatusEntry.or_port, StatusEntry.address,\
-        StatusEntry.validafter, StatusEntry.dir_port, StatusEntry.nickname)\
-        .join(StatusEntry, Fingerprint.sid == StatusEntry.id)
+    q = q.from_self(Fingerprint.fingerprint, Fingerprint.first_va,
+      Fingerprint.last_va, StatusEntry.or_port, StatusEntry.address,\
+      StatusEntry.validafter, StatusEntry.dir_port, StatusEntry.nickname)\
+      .join(StatusEntry, Fingerprint.sid == StatusEntry.id)
     q = from_to(q)
 
     if not (running['do_query'] and running['condition']):
-      q = q.order_by(StatusEntry.validafter.desc()) # the JOIN itself will leave the rows disordered again
+      q = q.order_by(StatusEntry.validafter.desc()) # the JOIN itself will
+                                                    # leave the rows disordered
+                                                    # again
 
   else:
 
-    q = select([Fingerprint.nickname, Fingerprint.fingerprint, Fingerprint.first_va, Fingerprint.last_va, StatusEntry.address,\
-        StatusEntry.or_port, StatusEntry.dir_port, StatusEntry.published, StatusEntry.validafter])
+    q = select([Fingerprint.nickname, Fingerprint.fingerprint,
+      Fingerprint.first_va, Fingerprint.last_va, StatusEntry.address,
+      StatusEntry.or_port, StatusEntry.dir_port, StatusEntry.published,
+      StatusEntry.validafter])
 
     if running['do_query']:
       if running['condition']:
@@ -207,12 +248,23 @@ def do_search(last_validafter, args=None):
         q = q.where(Fingerprint.fingerprint == term)
       else: # search
         q = q.where(Fingerprint.fingerprint.like(term + '%'))
-        #q = q.where(func.substr(Fingerprint.fingerprint, 0, Fingerprint.FP_SUBSTR_LEN) == term[:Fingerprint.FP_SUBSTR_LEN-1])
+        #q = q.where(func.substr(Fingerprint.fingerprint, 0,
+        #  Fingerprint.FP_SUBSTR_LEN) == term[:Fingerprint.FP_SUBSTR_LEN-1])
     elif '.' in term: # FIXME: primitive heuristics
-      # TODO: probably have a distinct 'address' table with a unique address column
-      #q = q.where(StatusEntry.address.like(term + '%')) # the WHERE filtering would happen after the WHERE clause
-      #q = q.where(StatusEntry.address.like(term)) # this actually executes rather decently - TODO: benchmark this
-      q = q.where(Fingerprint.address.like(term + '%')) # this gets the job done, but we lose a subset of addresses!
+      # TODO: probably have a distinct 'address' table with a unique address
+      # column
+
+      #q = q.where(StatusEntry.address.like(term + '%')) # the WHERE filtering
+                                                         # would happen after
+                                                         # the WHERE clause
+      #q = q.where(StatusEntry.address.like(term)) # this actually executes
+                                                   # rather decently -
+                                                   # TODO: benchmark this
+
+      q = q.where(Fingerprint.address.like(term + '%')) # this gets the job
+                                                        # done, but we lose
+                                                        # a subset of
+                                                        # addresses!
     else:
       q = q.where(func.lower(Fingerprint.nickname).like(term.lower() + '%'))
     c_from, c_to = get_from_to()
@@ -232,25 +284,16 @@ def do_search(last_validafter, args=None):
 
   return q
 
-#@profile # uncomment to get info on how much time is spent and where it's being spent
+#@profile # uncomment to get info on how much time is spent and where it's
+          # being spent
 def get_results(query_type='details'):
-  last_consensus = Consensus.query.order_by(Consensus.valid_after.desc()).first()
-
-  #q = StatusEntry.query.order_by('substr(fingerprint, 0, 12)').distinct('substr(fingerprint, 0, 12)')
-  #q = apply_filters(q, last_consensus)
-  #entries = q.all()
-
-  #s = request.args['search'] if 'search' in request.args and request.args['search'] else None
-  #if s:
-  #  query = search_nickname_details(s.lower()) if query_type == 'details' else search_nickname_summary(s.lower())
-  #  #query = sql_search_nickname(s.lower())
-  #else:
-  #  query = StatusEntry.query.order_by('validafter desc').limit(200)
+  last_consensus = Consensus.query.order_by(Consensus.valid_after.desc())\
+    .first()
 
   query = do_search(last_consensus.valid_after)
 
-  #print str(query)
-  #run_explain(query, output_statement=True, output_explain=True) # do an EXPLAIN, report any Seq Scans to log
+  # do an EXPLAIN, report any Seq Scans to log:
+  #run_explain(query, output_statement=True, output_explain=True)
 
   if OUTPUT_TIME:
     t1 = time.time()
@@ -260,7 +303,8 @@ def get_results(query_type='details'):
     entries = query.all() # higher-level Query object
   if OUTPUT_TIME:
     t2 = time.time()
-    debug_logger.info(str(datetime.datetime.now()) + ' - query finished, took: %s', t2 - t1)
+    debug_logger.info(str(datetime.datetime.now()) + \
+      ' - query finished, took: %s', t2 - t1)
     #print datetime.datetime.now(), '- query finished, took:', t2 - t1
 
   return last_consensus, entries
@@ -268,13 +312,17 @@ def get_results(query_type='details'):
 @app.route('/')
 def index():
   #return 'Placeholder index page.'
-  #return redirect('https://github.com/wfn/torsearch/blob/master/docs/onionoo_api.md')
-  return 'Placeholder index page. Try /summary, /details, /statuses. <a href="https://github.com/wfn/torsearch/blob/master/docs/onionoo_api.md">API documentation/summary.</a>'
+  return 'Placeholder index page.<br />'\
+  'Try /summary, /details, /statuses.<br />'\
+  '<a href='\
+  '"https://github.com/wfn/torsearch/blob/master/docs/onionoo_api.md">'\
+  'API documentation/summary.</a>'
 
 @app.route('/summary')
 def summary():
   last_consensus, entries = get_results('summary')
-  data = {'relays_published': last_consensus.valid_after.strftime('%Y-%m-%d %H:%M:%S'), 'relays': []}
+  data = {'relays_published': last_consensus.valid_after\
+    .strftime('%Y-%m-%d %H:%M:%S'), 'relays': []}
   for e in entries:
     data['relays'].append({
       'f': e.fingerprint,
@@ -292,7 +340,8 @@ def summary():
 @app.route('/details')
 def details():
   last_consensus, entries = get_results('details')
-  data = {'relays_published': last_consensus.valid_after.strftime('%Y-%m-%d %H:%M:%S'), 'relays': []}
+  data = {'relays_published': last_consensus.valid_after\
+    .strftime('%Y-%m-%d %H:%M:%S'), 'relays': []}
   for e in entries:
     data['relays'].append({
       'fingerprint': e.fingerprint,
@@ -314,19 +363,18 @@ def details():
 
 @app.route('/statuses')
 def statuses():
-  '''placeholder API point to be able to externally test the backend for status entry lists given some fingerprint.
-  '''
-
   lookup = request.args['lookup'] if 'lookup' in request.args else None
   if not lookup or len(lookup) != Fingerprint.FP_LEN:
     return abort(400)
 
-  last_consensus = Consensus.query.order_by(Consensus.valid_after.desc()).first()
+  last_consensus = Consensus.query.order_by(Consensus.valid_after.desc())\
+    .first()
   data = {'relays_published':
             last_consensus.valid_after.strftime('%Y-%m-%d %H:%M:%S'),
           'fingerprint': lookup,}
   q = StatusEntry.query.filter\
-      (func.substr(StatusEntry.fingerprint, 0, Fingerprint.FP_SUBSTR_LEN) == lookup[:Fingerprint.FP_SUBSTR_LEN-1])
+    (func.substr(StatusEntry.fingerprint, 0, Fingerprint.FP_SUBSTR_LEN)\
+      == lookup[:Fingerprint.FP_SUBSTR_LEN-1])
   q = q.order_by(StatusEntry.validafter.desc())
 
   q = from_to(q)
@@ -337,37 +385,39 @@ def statuses():
   entries = entries.all()
   if OUTPUT_TIME:
     t2 = time.time()
-    debug_logger.info(str(datetime.datetime.now()) + ' - statusentry query finished, took: %s', t2 - t1)
+    debug_logger.info(str(datetime.datetime.now()) + \
+      ' - statusentry query finished, took: %s', t2 - t1)
 
   if request.args.get('condensed', 'false') != 'true':
     data['entries'] = []
     for e in entries:
       data['entries'].append({
         'exit_addresses': [e.address],
-        'valid_after': e.validafter.strftime('%Y-%m-%d %H:%M:%S'),
+        'valid-after': e.validafter.strftime('%Y-%m-%d %H:%M:%S'),
       })
       if e.nickname != 'Unnamed':
         data['entries'][-1]['nickname'] = e.nickname
   else:
     data['ranges'] = []
     last = None
-    #for e in reversed(list(entries)): # TODO: this is probably not the wisest idea ever
     for e in entries:
       if not last or last - e.validafter > datetime.timedelta(hours=1):
         if data['ranges']:
-          data['ranges'][-1]['valid_after_from'] = last.strftime('%Y-%m-%d %H:%M:%S')
-        data['ranges'].append({'valid_after_to': e.validafter.strftime('%Y-%m-%d %H:%M:%S'),
+          data['ranges'][-1]['valid_after_from'] = \
+            last.strftime('%Y-%m-%d %H:%M:%S')
+        data['ranges'].append({'valid_after_to': \
+          e.validafter.strftime('%Y-%m-%d %H:%M:%S'),
           'last_addresses': [e.address], 'last_nickname': e.nickname})
       last = e.validafter
     if data['ranges']:
-      data['ranges'][-1]['valid_after_from'] = last.strftime('%Y-%m-%d %H:%M:%S')
+      data['ranges'][-1]['valid_after_from'] = \
+        last.strftime('%Y-%m-%d %H:%M:%S')
     data['total_status_count'] = len(entries)
 
   data['count'] = len(data['entries'] if 'entries' in data else data['ranges'])
   resp = jsonify(data)
   resp.status_code = 200
   return resp
-
 
 if __name__ == '__main__':
   pass

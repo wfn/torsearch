@@ -6,9 +6,11 @@ import stem
 
 class Descriptor(db.Model):
   '''Corresponds to Stem's ServerDescriptor.
+
   Can be used both for RelayDescriptor and BridgeDescriptor.
   In the latter case, the fingerprint is actually a hashed fingerprint,
-  the address is a kind of a hash of its IP address, etc., but the model is valid.
+  the address is a kind of a hash of its IP address, etc., but the model
+  is valid.
   '''
 
   __tablename__ = 'descriptor'
@@ -23,10 +25,12 @@ class Descriptor(db.Model):
   or_port = db.Column(db.Integer)
   dir_port = db.Column(db.Integer)
   platform = db.Column(db.String(256))
-  #tor_version = db.Column(db.String(96)) # covered in platform (str version OK for now)
+  #tor_version = db.Column(db.String(96)) # covered in platform (str version
+  # OK for now)
   #operating_system = db.Column(db.String(256)) # covered in platform
   uptime = db.Column(db.BigInteger)
-  contact = db.Column(db.LargeBinary) # some folks prefer to use l33t \x0's, this is the safest way to store them
+  contact = db.Column(db.LargeBinary) # some folks prefer to use l33t \x0's,
+                                      # this is the safest way to store them
   exit_policy = db.Column(db.String) # stringified summary for now
   average_bandwidth = db.Column(db.BigInteger)
   burst_bandwidth  = db.Column(db.BigInteger)
@@ -34,10 +38,14 @@ class Descriptor(db.Model):
   hibernating = db.Column(db.Boolean, server_default=db.text('FALSE'))
   extra_info_digest = db.Column(db.String(40))
   is_bridge = db.Column(db.Boolean, server_default=db.text('FALSE'))
-  morphisms = { # fields that we can't simply copy from Stem's ServerDescriptor just like that
+
+  # fields that we can't simply copy from Stem's ServerDescriptor just like that:
+
+  morphisms = {
     'descriptor': lambda stem_desc: stem_desc._path.split('/')[-1],
     'exit_policy': lambda stem_desc: stem_desc.exit_policy.summary(),
-    'is_bridge': lambda stem_desc: isinstance(stem_desc, stem.descriptor.server_descriptor.BridgeDescriptor)
+    'is_bridge': \
+      lambda stem_desc: isinstance(stem_desc, stem.descriptor.server_descriptor.BridgeDescriptor)
   }
 
   def __init__(self, stem_desc=None):
@@ -61,11 +69,14 @@ class Descriptor(db.Model):
         value = stem_desc.__dict__[col.name]
       if value:
         if self.NO_UNICODE and isinstance(value, unicode):
-          value = str(value) # this already assumes that the original value only contained ascii-encodable characters, so safe
+          value = str(value) # this already assumes that the original value
+                             # only contained ascii-encodable characters,
+                             # so safe
         setattr(onto, col.name, value)
 
 class Consensus(db.Model):
   '''Represents a network status document.
+
   Corresponds to NetworkStatusDocument
   '''
 
@@ -94,11 +105,14 @@ class Consensus(db.Model):
       if col.name in stem_doc.__dict__:
         value = stem_doc.__dict__[col.name]
         if self.NO_UNICODE and isinstance(value, unicode):
-          value = str(value) # this already assumes that the original value only contained ascii-encodable characters, so safe
+          value = str(value) # this already assumes that the original value
+                             # only contained ascii-encodable characters,
+                             # so safe
         setattr(onto, col.name, value)
 
 class StatusEntry(db.Model):
   '''A particular network status entry from a consensus document.
+
   Corresponds to RouterStatusEntry
   '''
 
@@ -111,24 +125,36 @@ class StatusEntry(db.Model):
   nickname = db.Column(db.String(19))
   fingerprint = db.Column(db.String(40))#, primary_key=True) # composite primary key (2/2)
   published = db.Column(db.DateTime, index=True)
-  descriptor = db.Column(db.String(40), index=True) # TODO: proper column naming.
-                                                    # As of now, what we call a 40-char-length 'descriptor' is called
-                                                    # a 'digest'; that is how it is referred to
-                                                    # in dir-spec.txt, and how it appears in Stem's RouterStatusEntry.
-                                                    # Hence as of now, this column is empty.
+
+  # TODO: proper column naming.
+  # As of now, what we call a 40-char-length 'descriptor' is called
+  # a 'digest'; that is how it is referred to
+  # in dir-spec.txt, and how it appears in Stem's RouterStatusEntry.
+  # Hence as of now, this column is empty.
+  descriptor = db.Column(db.String(40), index=True)
+
   address = db.Column(db.String(15), index=True)
   or_port = db.Column(db.Integer)
   dir_port = db.Column(db.Integer)
-  version_line = db.Column(db.String(96)) # ideally, we should also parse 'version' and store its fields preserving its semantics
+  version_line = db.Column(db.String(96)) # ideally, we should also parse
+                                          # 'version' and store its fields
+                                          # preserving its semantics
   # RouterStatusEntryV3-specific fields
-  digest = db.Column(db.String(40), index=True) # to quote dir-spec.txt, '"Digest" is a hash of its most recent descriptor as
-                                                # signed (that is, not including the signature), encoded in base64.'
+
+  # to quote dir-spec.txt, '"Digest" is a hash of its most recent descriptor as
+  # signed (that is, not including the signature), encoded in base64.'
+  digest = db.Column(db.String(40), index=True)
+
   bandwidth = db.Column(db.BigInteger)
   measured = db.Column(db.BigInteger)
   is_unmeasured = db.Column(db.Boolean)
 
-  # and now the flags (for automatic mapping, we will wickedly access __tables__ again directly, and look for fields starting with 'is')
-  # this does allow for some nice automated model mapping, and will need minimal adjustments upon protocol / data format changes.
+  # and now the flags (for automatic mapping, we will
+  # wickedly access __tables__ again directly, and look
+  # for fields starting with 'is')
+  # this does allow for some nice automated model mapping, and will need
+  # minimal adjustments upon protocol / data format changes.
+
   isAuthority = db.Column(db.Boolean, server_default=db.text('FALSE'))
   isBadExit = db.Column(db.Boolean, server_default=db.text('FALSE'))
   isBadDirectory = db.Column(db.Boolean, server_default=db.text('FALSE'))
@@ -167,8 +193,10 @@ class StatusEntry(db.Model):
           value = stem_status.__dict__[col.name]
         else:
           value = onto.morphisms[col.name](stem_status)
-      elif col.name.startswith('is'): #and col.name[2:] in map(str.lower, stem_status.flags):
-        for flag in stem_status.flags: # is_measured will have been processed before
+      elif col.name.startswith('is'): #and col.name[2:] in \
+                                      #  map(str.lower, stem_status.flags):
+        for flag in stem_status.flags: # is_measured will have been processed
+                                       # before
           if flag.lower() == col.name[2:].lower(): # just in case
             setattr(onto, col.name, True)
       if value is not None:
