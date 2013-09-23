@@ -123,13 +123,13 @@ While the above parameters are optional for the summary and details documents, *
 
  - **lookup** - Specify a particular (whole) fingerprint.
 
-Apart from the mandatory lookup parameter, one can optionally supply any combination of the aforementioned parameters:
+Apart from the mandatory lookup parameter, one can optionally supply any combination of the following parameters:
 
  - **from** - Return only network statuses that have been featured in consensus not before some date. For example, "?from=2012-05-01" will return network status entries that have been present in consensuses from 2012-05-01 00:00:00 and onwards.
 
  - **to** - Return only network statuses that have been featured in consensus up until some date, **not inclusive**. For example "?from=2012-05-01&to=2013" will return network status entries that have been present in consensuses not before 2012-05-01 00:00:00 and not after 2012-12-31 23:00:00 (this being the last consensus before the date matching "2013".)
 
-Additionally,
+ - Additionally,
 
   - **offset**
   - **limit**
