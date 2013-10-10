@@ -1,5 +1,7 @@
 Tor descriptor archival search system. "torsearch" is a placeholder name.
 
+[Backend currently running on a dev server.](http://ts.mkj.lt:5555/)
+
 README to be expanded. See the Onionoo doc for the API that this service implements/exposes.
 
 [Original PoC code moved to here.](https://github.com/wfn/torsearch-poc)
