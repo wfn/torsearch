@@ -283,7 +283,7 @@ def do_search(last_validafter, args=None):
     if not (running['do_query'] and running['condition']):
       q = q.order_by(StatusEntry.validafter.desc())
     # we didn't OFFSET/LIMIT before the JOIN, do it now
-    q = offset_limit(q)
+    q = offset_limit(q, args=args)
 
   return q
 
@@ -364,24 +364,22 @@ def details():
   resp.status_code = 200
   return resp
 
-@app.route('/statuses')
-def statuses():
-  lookup = request.args['lookup'] if 'lookup' in request.args else None
-  if not lookup or len(lookup) != Fingerprint.FP_LEN:
-    return abort(400)
-
+def get_statuses(args=None):
+  if not args:
+    args = request.args
   last_consensus = Consensus.query.order_by(Consensus.valid_after.desc())\
     .first()
-  data = {'relays_published':
-            last_consensus.valid_after.strftime('%Y-%m-%d %H:%M:%S'),
-          'fingerprint': lookup,}
+  lookup = args['lookup'] if 'lookup' in args else None
+  if not lookup or len(lookup) != Fingerprint.FP_LEN:
+    return None, None
+
   q = StatusEntry.query.filter\
     (func.substr(StatusEntry.fingerprint, 0, Fingerprint.FP_SUBSTR_LEN)\
       == lookup[:Fingerprint.FP_SUBSTR_LEN-1])
   q = q.order_by(StatusEntry.validafter.desc())
 
   q = from_to(q)
-  entries = offset_limit(q)
+  entries = offset_limit(q, args=args)
 
   if OUTPUT_TIME:
     t1 = time.time()
@@ -390,6 +388,19 @@ def statuses():
     t2 = time.time()
     debug_logger.info(str(datetime.datetime.now()) + \
       ' - statusentry query finished, took: %s', t2 - t1)
+
+  return last_consensus, entries
+
+@app.route('/statuses')
+def statuses():
+  last_consensus, entries = get_statuses()
+  if entries is None: # explicit check
+    return abort(400)
+
+  data = {'relays_published':
+            last_consensus.valid_after.strftime('%Y-%m-%d %H:%M:%S'),
+          'fingerprint': request.args['lookup']} # safe (otherwise would have
+                                                 # abort()'ed)
 
   if request.args.get('condensed', 'false') != 'true':
     data['entries'] = []
