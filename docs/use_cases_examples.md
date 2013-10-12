@@ -1,6 +1,6 @@
 # Use cases and examples of probing the searchable metrics archive API
 
-Here are some examples how the Onionoo-like API [See its documentation here](https://github.com/wfn/torsearch/blob/master/docs/onionoo_api.md) can be used.
+Here are some examples how the Onionoo-like API [(See its documentation here)](https://github.com/wfn/torsearch/blob/master/docs/onionoo_api.md) can be used.
 
 ## Get summary information about relays
 
@@ -24,7 +24,7 @@ We call this kind of usage "Onionoo-like": the types of queries that are run on 
 
 Like with Onionoo, one can query the system to search for specific relays using [various search criteria](https://github.com/wfn/torsearch/blob/master/docs/onionoo_api.md#methods).
 
- * [search for a specific relays (all its fingerprints over time) using its full nickname](http://ts.mkj.lt:5555/details?search=moria1)
+ * [search for some specific relays (all their fingerprints over time) using their full nickname](http://ts.mkj.lt:5555/details?search=moria1)
 
  * [search for all relays matching a full nickname that is shared by many](http://ts.mkj.lt:5555/details?search=unnamed)
 
@@ -54,9 +54,9 @@ Generally speaking, the API is flexible enough to support both "look up a specif
 
 One can look up a specific relay to see a list of consensuses that it has been present in (i.e., a list of network statuses for that relay), as well as the IP addresses and nicknames at the time of that consensus.
 
- * [look up a summary of some relay](http://ts.mkj.lt:5555/statuses?lookup=9695DFC35FFEB861329B9F1AB04C46397020CE31&condensed=true) - if it is stable enough, the summary shouldn not be long
+ * [look up a summary of some relay](http://ts.mkj.lt:5555/statuses?lookup=9695DFC35FFEB861329B9F1AB04C46397020CE31&condensed=true) - if it is stable enough, the summary should not be long
 
- * [on the other hand, more troublesome relays will have a different pattern of network statuses](http://ts.mkj.lt:5555/statuses?lookup=4B35EA75FD72A0115451F69200ABDB3CF96A8087)
+ * [on the other hand, more troublesome relays will have a different pattern of network statuses](http://ts.mkj.lt:5555/statuses?lookup=4B35EA75FD72A0115451F69200ABDB3CF96A8087&condensed=true&to=2013-09-26)
 
  * [browse through the result set using offset](http://ts.mkj.lt:5555/statuses?lookup=F397038ADC51336135E7B80BD99CA3844360292B&condensed=true&offset=500)
 
