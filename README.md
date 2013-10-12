@@ -8,4 +8,6 @@ README to be expanded. See the Onionoo doc for the API that this service impleme
 
 [See original proposal document.](http://kostas.mkj.lt/gsoc2013/gsoc2013.html)
 
-[Onionoo-like API doc.](https://github.com/wfn/torsearch/blob/master/docs/onionoo_api.md)
+[Onionoo-like API documentation.](https://github.com/wfn/torsearch/blob/master/docs/onionoo_api.md)
+
+[API use cases and examples.](https://github.com/wfn/torsearch/blob/master/docs/use_cases_examples.md)
