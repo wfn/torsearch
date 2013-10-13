@@ -8,3 +8,5 @@ imported
 additional.txt
 *.err
 db_schema_bak.sql
+*.tar
+*.tar.*

@@ -1,6 +1,6 @@
 # The Onionoo-like API provided by torsearch
 
-This is a placeholder / semi-stub document explaining the Onionoo-like API implemented by torsearch.
+This is a document explaining the Onionoo-like API implemented by torsearch. The document will probably later be further extended.
 
 ## General API description
 
@@ -33,8 +33,6 @@ Whatever the results may be, it is always possible to specify the following type
 ## Document types
 
 ### Summary documents
-
-(Pasting relevant parts from the Onionoo doc for now, and appending as needed.)
 
 Summary documents contain short summaries of relays with nicknames, fingerprints, IP addresses, and running information. Summary documents contain the following fields:
 
